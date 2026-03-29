@@ -1,0 +1,173 @@
+<html dir="rtl" lang="ar"><head></head><body><meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جاسوس العمارة</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a2e;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #16213e;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        h1 { color: #e94560; margin-bottom: 20px; }
+        .setup, .gameplay { display: none; }
+        .active { display: block; }
+        input, button {
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: none;
+            width: 100%;
+            font-size: 16px;
+        }
+        button {
+            background-color: #e94560;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        button:hover { background-color: #c62842; }
+        .card {
+            background-color: #0f3460;
+            padding: 40px;
+            border-radius: 10px;
+            font-size: 24px;
+            margin: 20px 0;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #e94560;
+        }
+        .hidden { display: none; }
+        .timer { font-size: 20px; color: #f9d342; margin-top: 10px; }
+    </style>
+
+
+
+<div class="container">
+    <h1>🕵️‍♂️ جاسوس العمارة</h1>
+
+    <!-- مرحلة الإعداد -->
+    <div id="setup" class="setup active">
+        <p>ادخل أسماء اللاعبين (اسم في كل سطر):</p>
+        <textarea id="playerNames" rows="5" style="width:100%; padding:10px; border-radius:8px;" placeholder="أحمد
+محمد
+سارة..."></textarea>
+        <button onclick="startGame()">ابدأ اللعبة</button>
+    </div>
+
+    <!-- مرحلة توزيع الأدوار -->
+    <div id="distribution" class="gameplay">
+        <h2 id="currentPlayerName">دور اللاعب: 08777</h2>
+        <div id="roleCard" class="card" onclick="toggleRole()" style="color: rgb(77, 255, 136);">📍 المكان: مطعم</div>
+        <p id="instruction">مرر الجهاز للاعب التالي بعد رؤية المكان</p>
+        <button id="nextBtn" onclick="nextPlayer()" style="display: block;">اللاعب التالي</button>
+    </div>
+
+    <!-- مرحلة اللعب والتايمر -->
+    <div id="mainGame" class="gameplay">
+        <h2>بدأت اللعبة!</h2>
+        <p>تناقشوا لكشف الجاسوس</p>
+        <div class="timer" id="timerDisplay">04:40</div>
+        <button onclick="resetGame()">لعبة جديدة</button>
+    </div>
+</div>
+
+<script>
+    const locations = ["مستشفى", "مدرسة", "سينما", "مطعم", "بنك", "حديقة حيوان", "مركز شرطة", "طائرة", "سفينة", "ملعب كورة"];
+    let players = [];
+    let roles = [];
+    let currentIndex = 0;
+    let currentLocation = "";
+    let spyIndex = -1;
+    let timerInterval;
+
+    function startGame() {
+        const namesText = document.getElementById('playerNames').value.trim();
+        if (!namesText) return alert("دخل أسماء اللاعبين الأول!");
+        
+        players = namesText.split('\n').filter(n => n.trim() !== "");
+        if (players.length < 3) return alert("لازم 3 لاعبين على الأقل!");
+
+        // اختيار مكان عشوائي وتحديد الجاسوس
+        currentLocation = locations[Math.floor(Math.random() * locations.length)];
+        spyIndex = Math.floor(Math.random() * players.length);
+        
+        currentIndex = 0;
+        showDistribution();
+    }
+
+    function showDistribution() {
+        document.getElementById('setup').classList.remove('active');
+        document.getElementById('distribution').classList.add('active');
+        updateDistributionUI();
+    }
+
+    function updateDistributionUI() {
+        document.getElementById('currentPlayerName').innerText = "دور اللاعب: " + players[currentIndex];
+        document.getElementById('roleCard').innerText = "اضغط لعرض المكان";
+        document.getElementById('nextBtn').style.display = "none";
+    }
+
+    function toggleRole() {
+        const card = document.getElementById('roleCard');
+        if (currentIndex === spyIndex) {
+            card.innerText = "🕵️ أنت الجاسوس!";
+            card.style.color = "#ff4d4d";
+        } else {
+            card.innerText = "📍 المكان: " + currentLocation;
+            card.style.color = "#4dff88";
+        }
+        document.getElementById('nextBtn').style.display = "block";
+    }
+
+    function nextPlayer() {
+        currentIndex++;
+        if (currentIndex < players.length) {
+            updateDistributionUI();
+        } else {
+            startTimer();
+        }
+    }
+
+    function startTimer() {
+        document.getElementById('distribution').classList.remove('active');
+        document.getElementById('mainGame').classList.add('active');
+        
+        let timeLeft = 300; // 5 دقائق
+        timerInterval = setInterval(() => {
+            let minutes = Math.floor(timeLeft / 60);
+            let seconds = timeLeft % 60;
+            document.getElementById('timerDisplay').innerText = 
+                (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                alert("خلص الوقت! اكشفوا الجاسوس!");
+            }
+            timeLeft--;
+        }, 1000);
+    }
+
+    function resetGame() {
+        clearInterval(timerInterval);
+        document.getElementById('mainGame').classList.remove('active');
+        document.getElementById('setup').classList.add('active');
+        document.getElementById('playerNames').value = "";
+    }
+</script></body></html>

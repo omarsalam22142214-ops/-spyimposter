@@ -1,6 +1,7 @@
-<html dir="rtl" lang="ar"><head></head><body><meta charset="UTF-8">
+<html dir="rtl" lang="ar"><head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>جاسوس العمارة</title>
+    <title>جاسوس العمارة - تحديات 17</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -10,8 +11,9 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            overflow-x: hidden;
         }
         .container {
             background-color: #16213e;
@@ -21,82 +23,170 @@
             text-align: center;
             max-width: 500px;
             width: 90%;
+            border: 1px solid #0f3460;
         }
-        h1 { color: #e94560; margin-bottom: 20px; }
-        .setup, .gameplay { display: none; }
+        h1 { color: #e94560; margin-bottom: 10px; font-size: 28px; }
+        .subtitle { color: #8892b0; margin-bottom: 25px; font-size: 14px; }
+        
+        .screen { display: none; }
         .active { display: block; }
-        input, button {
-            padding: 12px;
+
+        input, textarea, button {
+            padding: 14px;
             margin: 10px 0;
-            border-radius: 8px;
+            border-radius: 10px;
             border: none;
             width: 100%;
             font-size: 16px;
+            box-sizing: border-box;
         }
+
+        input, textarea {
+            background-color: #0f3460;
+            color: white;
+            border: 1px solid #1a1a2e;
+            text-align: center;
+        }
+
         button {
             background-color: #e94560;
             color: white;
             cursor: pointer;
             font-weight: bold;
             transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        button:hover { background-color: #c62842; }
+
+        button:hover { background-color: #c62842; transform: translateY(-2px); }
+
+        .icon-spacing {
+            margin-left: 12px; /* المسافة اللي طلبتها بين الأيقونة والكلام */
+            font-size: 20px;
+        }
+
         .card {
             background-color: #0f3460;
             padding: 40px;
-            border-radius: 10px;
+            border-radius: 15px;
             font-size: 24px;
             margin: 20px 0;
-            min-height: 50px;
+            min-height: 80px;
             display: flex;
             align-items: center;
             justify-content: center;
             border: 2px dashed #e94560;
+            cursor: pointer;
         }
-        .hidden { display: none; }
-        .timer { font-size: 20px; color: #f9d342; margin-top: 10px; }
+
+        .timer { font-size: 40px; color: #f9d342; font-weight: bold; margin: 20px 0; }
+        .room-code-display {
+            background: #1a1a2e;
+            padding: 10px;
+            border-radius: 5px;
+            color: #4dff88;
+            font-family: monospace;
+            letter-spacing: 2px;
+        }
+
+        footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #4e5e80;
+        }
     </style>
-
-
+</head>
+<body>
 
 <div class="container">
     <h1>🕵️‍♂️ جاسوس العمارة</h1>
+    <div class="subtitle">سجل أسامي اللعبة وفك شفرات الجاسوس</div>
 
-    <!-- مرحلة الإعداد -->
-    <div id="setup" class="setup active">
-        <p>ادخل أسماء اللاعبين (اسم في كل سطر):</p>
-        <textarea id="playerNames" rows="5" style="width:100%; padding:10px; border-radius:8px;" placeholder="أحمد
+    <div id="startScreen" class="screen active">
+        <button onclick="showCreateRoom()">إنشاء كود جديدة</button>
+        <button onclick="showJoinRoom()" style="background-color: #0f3460;">🔑 انضمام بكود </button>
+    </div>
+
+    <div id="createScreen" class="screen">
+        <p>رقم عمارة اللعبة:</p>
+        <h2 class="room-code-display" id="generatedCode">----</h2>
+        <p>ادخل أسماء السكان (اسم في كل سطر):</p>
+        <textarea id="playerNames" rows="5" placeholder="أحمد
 محمد
-سارة..."></textarea>
-        <button onclick="startGame()">ابدأ اللعبة</button>
+سارة"></textarea>
+        <button onclick="startGame()">
+            <span class="icon-spacing">🚪</span> التالي اختيار القسم الجاسوس
+        </button>
     </div>
 
-    <!-- مرحلة توزيع الأدوار -->
-    <div id="distribution" class="gameplay">
-        <h2 id="currentPlayerName">دور اللاعب: 08777</h2>
-        <div id="roleCard" class="card" onclick="toggleRole()" style="color: rgb(77, 255, 136);">📍 المكان: مطعم</div>
+    <div id="joinScreen" class="screen">
+        <p>اكتب رقم العمارة للدخول:</p>
+        <input type="text" id="joinInput" placeholder="مثال: 1234" data-ddg-inputtype="unknown">
+        <button onclick="validateJoin()">دخول الشقة</button>
+        <button onclick="backToMain()" style="background: none; color: #8892b0;">رجوع</button>
+    </div>
+
+    <div id="distribution" class="screen">
+        <h2 id="currentPlayerName">دور اللاعب: ...</h2>
+        <div id="roleCard" class="card" onclick="toggleRole()">اضغط لعرض المكان</div>
         <p id="instruction">مرر الجهاز للاعب التالي بعد رؤية المكان</p>
-        <button id="nextBtn" onclick="nextPlayer()" style="display: block;">اللاعب التالي</button>
+        <button id="nextBtn" onclick="nextPlayer()" style="display:none;">
+            اللاعب التالي <span style="margin-right: 10px;">⬅️</span>
+        </button>
     </div>
 
-    <!-- مرحلة اللعب والتايمر -->
-    <div id="mainGame" class="gameplay">
-        <h2>بدأت اللعبة!</h2>
-        <p>تناقشوا لكشف الجاسوس</p>
-        <div class="timer" id="timerDisplay">04:40</div>
-        <button onclick="resetGame()">لعبة جديدة</button>
+    <div id="mainGame" class="screen">
+        <h2 style="color: #4dff88;">بدأت اللعبة!</h2>
+        <p>تناقشوا لكشف الجاسوس قبل انتهاء الوقت</p>
+        <div class="timer" id="timerDisplay">15:00</div>
+        <button onclick="location.reload()">لعبة جديدة</button>
     </div>
+
+    <footer>ENG OMAR . All Rights Reserved 2026_2027 ©</footer>
 </div>
 
 <script>
-    const locations = ["مستشفى", "مدرسة", "سينما", "مطعم", "بنك", "حديقة حيوان", "مركز شرطة", "طائرة", "سفينة", "ملعب كورة"];
+    const locations = ["مستشفى", "مدرسة", "سينما", "مطعم", "بنك", "حديقة حيوان", "مركز شرطة", "طائرة", "سفينة", "ملعب كورة", "جامعة", "مول تجاري", "مكتبة"];
     let players = [];
-    let roles = [];
     let currentIndex = 0;
     let currentLocation = "";
     let spyIndex = -1;
     let timerInterval;
+    let currentRoomCode = "";
 
+    // وظائف التنقل
+    function showCreateRoom() {
+        hideAll();
+        document.getElementById('createScreen').classList.add('active');
+        currentRoomCode = Math.floor(1000 + Math.random() * 9000);
+        document.getElementById('generatedCode').innerText = currentRoomCode;
+    }
+
+    function showJoinRoom() {
+        hideAll();
+        document.getElementById('joinScreen').classList.add('active');
+    }
+
+    function backToMain() {
+        hideAll();
+        document.getElementById('startScreen').classList.add('active');
+    }
+
+    function hideAll() {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    }
+
+    function validateJoin() {
+        const val = document.getElementById('joinInput').value;
+        if(val == currentRoomCode && val != "") {
+            showCreateRoom(); // في نسخة الـ Client نفتح نفس الصفحة
+        } else {
+            alert("رقم العمارة غلط يا فنان!");
+        }
+    }
+
+    // منطق اللعبة
     function startGame() {
         const namesText = document.getElementById('playerNames').value.trim();
         if (!namesText) return alert("دخل أسماء اللاعبين الأول!");
@@ -104,16 +194,11 @@
         players = namesText.split('\n').filter(n => n.trim() !== "");
         if (players.length < 3) return alert("لازم 3 لاعبين على الأقل!");
 
-        // اختيار مكان عشوائي وتحديد الجاسوس
         currentLocation = locations[Math.floor(Math.random() * locations.length)];
         spyIndex = Math.floor(Math.random() * players.length);
         
         currentIndex = 0;
-        showDistribution();
-    }
-
-    function showDistribution() {
-        document.getElementById('setup').classList.remove('active');
+        hideAll();
         document.getElementById('distribution').classList.add('active');
         updateDistributionUI();
     }
@@ -121,6 +206,7 @@
     function updateDistributionUI() {
         document.getElementById('currentPlayerName').innerText = "دور اللاعب: " + players[currentIndex];
         document.getElementById('roleCard').innerText = "اضغط لعرض المكان";
+        document.getElementById('roleCard').style.color = "white";
         document.getElementById('nextBtn').style.display = "none";
     }
 
@@ -133,7 +219,7 @@
             card.innerText = "📍 المكان: " + currentLocation;
             card.style.color = "#4dff88";
         }
-        document.getElementById('nextBtn').style.display = "block";
+        document.getElementById('nextBtn').style.display = "flex";
     }
 
     function nextPlayer() {
@@ -146,10 +232,10 @@
     }
 
     function startTimer() {
-        document.getElementById('distribution').classList.remove('active');
+        hideAll();
         document.getElementById('mainGame').classList.add('active');
         
-        let timeLeft = 300; // 5 دقائق
+        let timeLeft = 900; // 15 دقيقة
         timerInterval = setInterval(() => {
             let minutes = Math.floor(timeLeft / 60);
             let seconds = timeLeft % 60;
@@ -163,11 +249,7 @@
             timeLeft--;
         }, 1000);
     }
+</script>
 
-    function resetGame() {
-        clearInterval(timerInterval);
-        document.getElementById('mainGame').classList.remove('active');
-        document.getElementById('setup').classList.add('active');
-        document.getElementById('playerNames').value = "";
-    }
-</script></body></html>
+
+</body></html>

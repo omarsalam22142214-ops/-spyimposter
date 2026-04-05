@@ -1,7 +1,10 @@
 <html dir="rtl" lang="ar"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>جاسوس العمارة - تحديات 17</title>
+    <title>جاسوس العمارة - أونلاين</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -31,7 +34,7 @@
         .screen { display: none; }
         .active { display: block; }
 
-        input, textarea, button {
+        input, button {
             padding: 14px;
             margin: 10px 0;
             border-radius: 10px;
@@ -40,14 +43,12 @@
             font-size: 16px;
             box-sizing: border-box;
         }
-
-        input, textarea {
+        input {
             background-color: #0f3460;
             color: white;
             border: 1px solid #1a1a2e;
             text-align: center;
         }
-
         button {
             background-color: #e94560;
             color: white;
@@ -58,13 +59,8 @@
             align-items: center;
             justify-content: center;
         }
-
         button:hover { background-color: #c62842; transform: translateY(-2px); }
-
-        .icon-spacing {
-            margin-left: 12px; /* المسافة اللي طلبتها بين الأيقونة والكلام */
-            font-size: 20px;
-        }
+        button:disabled { background-color: #555; cursor: not-allowed; }
 
         .card {
             background-color: #0f3460;
@@ -88,154 +84,242 @@
             color: #4dff88;
             font-family: monospace;
             letter-spacing: 2px;
+            font-size: 24px;
         }
-
-        footer {
-            margin-top: 20px;
-            font-size: 12px;
-            color: #4e5e80;
+        .player-list {
+            background: #0f3460;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: right;
+            max-height: 150px;
+            overflow-y: auto;
         }
+        .player-list li { list-style: none; padding: 5px 0; border-bottom: 1px solid #1a1a2e;}
+        
+        footer { margin-top: 20px; font-size: 12px; color: #4e5e80; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>🕵️‍♂️ جاسوس العمارة</h1>
-    <div class="subtitle">سجل أسامي اللعبة وفك شفرات الجاسوس</div>
+    <div class="subtitle">نسخة الأونلاين - كل واحد على جهازه</div>
 
     <div id="startScreen" class="screen active">
-        <button onclick="showCreateRoom()">إنشاء كود جديدة</button>
-        <button onclick="showJoinRoom()" style="background-color: #0f3460;">🔑 انضمام بكود </button>
-    </div>
-
-    <div id="createScreen" class="screen">
-        <p>رقم عمارة اللعبة:</p>
-        <h2 class="room-code-display" id="generatedCode">----</h2>
-        <p>ادخل أسماء السكان (اسم في كل سطر):</p>
-        <textarea id="playerNames" rows="5" placeholder="أحمد
-محمد
-سارة"></textarea>
-        <button onclick="startGame()">
-            <span class="icon-spacing">🚪</span> التالي اختيار القسم الجاسوس
-        </button>
+        <p>اسمك إيه  ؟</p>
+        <input type="text" id="playerName" placeholder="اكتب اسمك هنا...">
+        <button onclick="createRoom()">➕ إنشاء كود عمارة جديد</button>
+        <button onclick="showJoinScreen()" style="background-color: #0f3460;">🔑 انضمام لعمارة موجودة</button>
     </div>
 
     <div id="joinScreen" class="screen">
         <p>اكتب رقم العمارة للدخول:</p>
-        <input type="text" id="joinInput" placeholder="مثال: 1234" data-ddg-inputtype="unknown">
-        <button onclick="validateJoin()">دخول الشقة</button>
+        <input type="number" id="joinInput" placeholder="مثال: 1234">
+        <button onclick="joinRoom()">دخول الشقة</button>
         <button onclick="backToMain()" style="background: none; color: #8892b0;">رجوع</button>
     </div>
 
-    <div id="distribution" class="screen">
-        <h2 id="currentPlayerName">دور اللاعب: ...</h2>
-        <div id="roleCard" class="card" onclick="toggleRole()">اضغط لعرض المكان</div>
-        <p id="instruction">مرر الجهاز للاعب التالي بعد رؤية المكان</p>
-        <button id="nextBtn" onclick="nextPlayer()" style="display:none;">
-            اللاعب التالي <span style="margin-right: 10px;">⬅️</span>
-        </button>
+    <div id="lobbyScreen" class="screen">
+        <p>رقم العمارة:</p>
+        <h2 class="room-code-display" id="displayRoomCode">----</h2>
+        <p>السكان الموجودين حالياً:</p>
+        <ul class="player-list" id="playersListUI"></ul>
+        <div id="hostControls" style="display: none;">
+            <button onclick="startGame()">🚀 ابدأ اللعبة</button>
+        </div>
+        <p id="waitMessage" style="color: #f9d342; display: none;">في انتظار صاحب العمارة يبدأ اللعبة...</p>
+    </div>
+
+    <div id="roleScreen" class="screen">
+        <h2>دورك في الجيم</h2>
+        <div id="roleCard" class="card" onclick="toggleRole()">اضغط هنا عشان تشوف دورك</div>
+        <button onclick="goToTimer()">روح للتايمر ⏱️</button>
     </div>
 
     <div id="mainGame" class="screen">
-        <h2 style="color: #4dff88;">بدأت اللعبة!</h2>
+        <h2 style="color: #4dff88;">اللعبة شغالة!</h2>
         <p>تناقشوا لكشف الجاسوس قبل انتهاء الوقت</p>
         <div class="timer" id="timerDisplay">15:00</div>
-        <button onclick="location.reload()">لعبة جديدة</button>
+        <button onclick="location.reload()" style="background-color: #0f3460;">خروج من العمارة</button>
     </div>
 
     <footer>ENG OMAR . All Rights Reserved 2026_2027 ©</footer>
 </div>
 
 <script>
+    // ==========================================
+    // ⚠️⚠️ تنبيه مهم جداً ⚠️⚠️
+    // لازم تحط إعدادات الـ Firebase بتاعتك هنا عشان اللعبة تشتغل
+    // ==========================================
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    // تهيئة Firebase
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+
+    // متغيرات اللعبة
     const locations = ["مستشفى", "مدرسة", "سينما", "مطعم", "بنك", "حديقة حيوان", "مركز شرطة", "طائرة", "سفينة", "ملعب كورة", "جامعة", "مول تجاري", "مكتبة"];
-    let players = [];
-    let currentIndex = 0;
-    let currentLocation = "";
-    let spyIndex = -1;
+    let myName = "";
+    let roomCode = "";
+    let isHost = false;
+    let myRole = "";
+    let gameLocation = "";
     let timerInterval;
-    let currentRoomCode = "";
 
-    // وظائف التنقل
-    function showCreateRoom() {
-        hideAll();
-        document.getElementById('createScreen').classList.add('active');
-        currentRoomCode = Math.floor(1000 + Math.random() * 9000);
-        document.getElementById('generatedCode').innerText = currentRoomCode;
+    // --- وظائف التنقل ---
+    function hideAll() {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     }
-
-    function showJoinRoom() {
-        hideAll();
-        document.getElementById('joinScreen').classList.add('active');
-    }
-
     function backToMain() {
         hideAll();
         document.getElementById('startScreen').classList.add('active');
     }
-
-    function hideAll() {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    function showJoinScreen() {
+        myName = document.getElementById('playerName').value.trim();
+        if(!myName) return alert("اكتب اسمك الأول يا ريس!");
+        hideAll();
+        document.getElementById('joinScreen').classList.add('active');
     }
 
-    function validateJoin() {
-        const val = document.getElementById('joinInput').value;
-        if(val == currentRoomCode && val != "") {
-            showCreateRoom(); // في نسخة الـ Client نفتح نفس الصفحة
+    // --- منطق الأونلاين (Firebase) ---
+    
+    // 1. إنشاء غرفة جديدة
+    function createRoom() {
+        myName = document.getElementById('playerName').value.trim();
+        if(!myName) return alert("اكتب اسمك الأول!");
+
+        roomCode = Math.floor(1000 + Math.random() * 9000).toString();
+        isHost = true;
+
+        // تجهيز الغرفة في الداتابيز
+        db.ref('rooms/' + roomCode).set({
+            status: 'waiting',
+            host: myName
+        });
+        
+        // إضافة صاحب الغرفة كأول لاعب
+        db.ref('rooms/' + roomCode + '/players/' + myName).set(true);
+
+        setupLobbyUI();
+        listenToRoom();
+    }
+
+    // 2. الانضمام لغرفة
+    function joinRoom() {
+        roomCode = document.getElementById('joinInput').value.trim();
+        if(!roomCode) return alert("اكتب كود العمارة!");
+
+        // التأكد إن الغرفة موجودة ولسه مابدأتش
+        db.ref('rooms/' + roomCode).once('value').then(snapshot => {
+            const data = snapshot.val();
+            if (data && data.status === 'waiting') {
+                db.ref('rooms/' + roomCode + '/players/' + myName).set(true);
+                setupLobbyUI();
+                listenToRoom();
+            } else {
+                alert("الكود غلط أو اللعبة بدأت خلاص!");
+            }
+        });
+    }
+
+    // 3. تظبيط شاشة الانتظار
+    function setupLobbyUI() {
+        hideAll();
+        document.getElementById('lobbyScreen').classList.add('active');
+        document.getElementById('displayRoomCode').innerText = roomCode;
+        
+        if(isHost) {
+            document.getElementById('hostControls').style.display = 'block';
         } else {
-            alert("رقم العمارة غلط يا فنان!");
+            document.getElementById('waitMessage').style.display = 'block';
         }
     }
 
-    // منطق اللعبة
-    function startGame() {
-        const namesText = document.getElementById('playerNames').value.trim();
-        if (!namesText) return alert("دخل أسماء اللاعبين الأول!");
-        
-        players = namesText.split('\n').filter(n => n.trim() !== "");
-        if (players.length < 3) return alert("لازم 3 لاعبين على الأقل!");
+    // 4. مراقبة التغييرات في الغرفة (أهم جزء في الأونلاين)
+    function listenToRoom() {
+        db.ref('rooms/' + roomCode).on('value', snapshot => {
+            const data = snapshot.val();
+            if (!data) return;
 
-        currentLocation = locations[Math.floor(Math.random() * locations.length)];
-        spyIndex = Math.floor(Math.random() * players.length);
-        
-        currentIndex = 0;
-        hideAll();
-        document.getElementById('distribution').classList.add('active');
-        updateDistributionUI();
+            // تحديث قائمة اللاعبين
+            if (data.players) {
+                const playersList = Object.keys(data.players);
+                const listUI = document.getElementById('playersListUI');
+                listUI.innerHTML = "";
+                playersList.forEach(p => {
+                    listUI.innerHTML += `<li>👤 ${p}</li>`;
+                });
+            }
+
+            // لو صاحب الغرفة داس ستارت
+            if (data.status === 'playing') {
+                gameLocation = data.location;
+                const spyName = data.spy;
+                
+                if(myName === spyName) {
+                    myRole = "spy";
+                } else {
+                    myRole = "citizen";
+                }
+                showRoleScreen();
+            }
+        });
     }
 
-    function updateDistributionUI() {
-        document.getElementById('currentPlayerName').innerText = "دور اللاعب: " + players[currentIndex];
-        document.getElementById('roleCard').innerText = "اضغط لعرض المكان";
-        document.getElementById('roleCard').style.color = "white";
-        document.getElementById('nextBtn').style.display = "none";
+    // 5. بدء اللعبة (للـ Host بس)
+    function startGame() {
+        db.ref('rooms/' + roomCode + '/players').once('value').then(snap => {
+            const playersObj = snap.val();
+            if(!playersObj) return;
+            const playersArr = Object.keys(playersObj);
+            
+            if(playersArr.length < 3) return alert("لازم 3 لاعبين على الأقل عشان تبدأ!");
+
+            const randomLocation = locations[Math.floor(Math.random() * locations.length)];
+            const randomSpy = playersArr[Math.floor(Math.random() * playersArr.length)];
+
+            // إرسال البيانات لكل الأجهزة
+            db.ref('rooms/' + roomCode).update({
+                status: 'playing',
+                location: randomLocation,
+                spy: randomSpy
+            });
+        });
+    }
+
+    // --- منطق عرض الدور والتايمر ---
+    function showRoleScreen() {
+        hideAll();
+        document.getElementById('roleScreen').classList.add('active');
     }
 
     function toggleRole() {
         const card = document.getElementById('roleCard');
-        if (currentIndex === spyIndex) {
+        if (myRole === "spy") {
             card.innerText = "🕵️ أنت الجاسوس!";
             card.style.color = "#ff4d4d";
         } else {
-            card.innerText = "📍 المكان: " + currentLocation;
+            card.innerText = "📍 المكان: " + gameLocation;
             card.style.color = "#4dff88";
         }
-        document.getElementById('nextBtn').style.display = "flex";
     }
 
-    function nextPlayer() {
-        currentIndex++;
-        if (currentIndex < players.length) {
-            updateDistributionUI();
-        } else {
-            startTimer();
-        }
-    }
-
-    function startTimer() {
+    function goToTimer() {
         hideAll();
         document.getElementById('mainGame').classList.add('active');
         
         let timeLeft = 900; // 15 دقيقة
+        clearInterval(timerInterval); // عشان التايمر ميتكررش
         timerInterval = setInterval(() => {
             let minutes = Math.floor(timeLeft / 60);
             let seconds = timeLeft % 60;

@@ -1,4 +1,5 @@
-<html dir="rtl" lang="ar"><head>
+<html dir="rtl" lang="ar">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>جاسوس العمارة - أونلاين</title>
@@ -106,7 +107,7 @@
     <div class="subtitle">نسخة الأونلاين - كل واحد على جهازه</div>
 
     <div id="startScreen" class="screen active">
-        <p>اسمك إيه  ؟</p>
+        <p>اسمك إيه يا فنان؟</p>
         <input type="text" id="playerName" placeholder="اكتب اسمك هنا...">
         <button onclick="createRoom()">➕ إنشاء كود عمارة جديد</button>
         <button onclick="showJoinScreen()" style="background-color: #0f3460;">🔑 انضمام لعمارة موجودة</button>
@@ -147,18 +148,15 @@
 </div>
 
 <script>
-    // ==========================================
-    // ⚠️⚠️ تنبيه مهم جداً ⚠️⚠️
-    // لازم تحط إعدادات الـ Firebase بتاعتك هنا عشان اللعبة تشتغل
-    // ==========================================
+    // إعدادات Firebase الخاصة بيك (تمت إضافتها وتجهيزها للعمل المباشر)
     const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-        databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_PROJECT_ID.appspot.com",
-        messagingSenderId: "YOUR_SENDER_ID",
-        appId: "YOUR_APP_ID"
+        apiKey: "AIzaSyBtIkF-UhkeFa-cxutgJAQpR7K_IjKxloc",
+        authDomain: "spygame-337ee.firebaseapp.com",
+        databaseURL: "https://spygame-337ee-default-rtdb.firebaseio.com", 
+        projectId: "spygame-337ee",
+        storageBucket: "spygame-337ee.firebasestorage.app",
+        messagingSenderId: "179349000426",
+        appId: "1:179349000426:web:6ac2c5993809b50a2b4793"
     };
 
     // تهيئة Firebase
@@ -245,7 +243,7 @@
         }
     }
 
-    // 4. مراقبة التغييرات في الغرفة (أهم جزء في الأونلاين)
+    // 4. مراقبة التغييرات في الغرفة
     function listenToRoom() {
         db.ref('rooms/' + roomCode).on('value', snapshot => {
             const data = snapshot.val();
@@ -335,5 +333,5 @@
     }
 </script>
 
-
-</body></html>
+</body>
+</html>
